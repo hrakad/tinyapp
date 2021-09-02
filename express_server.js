@@ -1,12 +1,11 @@
 const express = require('express');
-
-const app = express();
+const bodyParser = require("body-parser");
 const PORT = 8080;
 
-app.set("view engine", "ejs");
+const app = express();
 
-const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+app.set("view engine", "ejs");
 
 function generateRandomString() {
   let result = "";
@@ -42,6 +41,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body);
+  const shortURL = generateRandomString();
   console.log(shortURL);
   res.send("Ok");
 });
