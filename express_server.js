@@ -22,7 +22,8 @@ const urlDatabase = {
 };
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  const templateVars = { urls: urlDatabase };
+  res.render("partials/_header", templateVars);
 });
 
 app.get("/urls", (req, res) => {
@@ -40,10 +41,9 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
   const shortURL = generateRandomString();
-  console.log(shortURL);
-  res.send("Ok");
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.listen(PORT, () => {
