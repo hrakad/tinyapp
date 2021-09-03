@@ -10,5 +10,21 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+    <% if(username) { %>
+      <h4 style="margin-right: 15px;">Hello <%= username %></h4>
+      <form class="form-inline" action="/logout" method="POST">
+        <div class="form-group mb-2">
+          <button type="submit" class="btn btn-primary">Logout</button>
+        </div>
+      </form>
+    <% } else{ %>
+      <form class="form-inline" action="/login" method="POST">
+        <div class="form-group mb-2">
+          <label for="username"></label>
+          <input class="form-control" type="text" name="username" placeholder="Username" style="width: 150px; margin: 1em">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    <% } %>
   </nav>
 </header>
