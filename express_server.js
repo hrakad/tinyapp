@@ -62,6 +62,11 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlDatabase[req.params.shortURL]);
 });
 
+app.get("/register", (req, res) => {
+  const templateVars = { user: username }
+  res.render('register', templateVars)
+});
+
 app.post("/urls/:id", (req, res) => {
   console.log(req.params.id, req.body);
   urlDatabase[req.params.id] = req.body.longURL;
