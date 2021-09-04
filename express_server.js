@@ -55,67 +55,84 @@ const users = {
     password: "dishwasher-funk"
   }
 }
-//Route into the root of the app
+//Create endpoint for the root of the app
 app.get("/", (req, res) => {
+  const currentUserId = req.cookies['userId'];
+
   const templateVars = {
     urls: urlDatabase,
-    userId: req.cookies['userId'],
-    users: users,
+    userId: currentUserId,
+    user: users[currentUserId],
   };
   res.render("registration", templateVars);
 });
 
-//Route to the urls
+//Create endpoint for the urls
 app.get("/urls", (req, res) => {
+  const currentUserId = req.cookies['userId'];
+
   const templateVars = {
     urls: urlDatabase,
-    userId: req.cookies['userId'],
-    users: users,
+    userId: currentUserId,
+    user: users[currentUserId],
   };
   res.render("urls_index", templateVars);
 });
 
-//Route to the new urls
+//Create endpoint for new urls
 app.get("/urls/new", (req, res) => {
+  const currentUserId = req.cookies['userId'];
   const templateVars = {
-    userId: req.cookies['userId'],
-    users: users,
+    urls: urlDatabase,
+    userId: currentUserId,
+    user: users[currentUserId],
   };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  const currentUserId = req.cookies['userId'];
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    userId: req.cookies['userId'],
-    users: users,
+    userId: currentUserId,
+    users: users[currentUserId],
   };
   res.render("urls_show", templateVars);
 });
 
+//Create endpoint for shortURLs
 app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlDatabase[req.params.shortURL]);
 });
 
-// Create register endpoint
-app.get("/register", (req, res) => {
+//Create login endpoint
+app.get('/login', (req, res) => {
+  const currentUserId = req.cookies['userId'];
   const templateVars = {
-    userId: req.cookies['userId']
+    userId: currentUserId,
   };
-  res.render('registration', templateVars)
+  res.render("login", templateVars);
 });
 
-//Add route to handle the registration
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  if (!email || !password) {
+// // Create register endpoint
+app.get('/register', (req, res) => {
+  const currentUserId = req.cookies['userId'];
+  const templateVars = {
+    userId: currentUserId,
+  };
+  res.render("registration", templateVars);
+});
+
+// //Add route to handle the registration
+app.post('/register', (req, res) => {
+  const currentEmail = req.body.email;
+  const currentPassword = req.body.password;
+  if (!currentEmail || !currentPassword) {
     return res.status(400).send('Please enter a valid email/password');
   } else {
-    const userInfo = getUserByEmail(users, email);
+    const userInfo = getUserByEmail(users, currentEmail);
     if (Object.keys(userInfo).length > 0) {
-      res.clearCookie('userId');
       return res.status(302).send("User/password already exists..login instead!");
     }
   }
@@ -124,13 +141,12 @@ app.post("/register", (req, res) => {
     id: userId,
     email: req.body.email,
     password: req.body.password
-}
+  };
   res.cookie('userId', userId);
   res.redirect('/urls');
 });
 
 app.post("/urls/:id", (req, res) => {
-  console.log(req.params.id, req.body);
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect('/urls');
 });
@@ -141,24 +157,36 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-//Add route to edit URLs 
+// //Add route to edit URLs 
 app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect(`/urls/${req.params.shortURL}`);
 });
 
-//Add route to delete URLs 
+// //Add route to delete URLs 
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect(`/urls`);
 });
 
-//Add route to login
+// //Add route to login
 app.post('/login', (req, res) => {
-  res.cookie('userId', req.body.userId);
-  res.redirect(`/urls`);
+  const currentEmail = req.body.email;
+  const ceurrentPassword = req.body.password;
+  if (!currentEmail || !ceurrentPassword) {
+    return res.status(403).send('Please enter a valid email/password');
+  } else {
+  // Lookup the user object in the users object using the user_id cookie value
+    const userInfo = getUserByEmail(users, currentEmail);
+    if (Object.keys(userInfo).length > 0 && ceurrentPassword === userInfo['password']) {
+      res.cookie('userId', userInfo['id']);
+      res.redirect('/urls');
+    } else {
+      return res.status(403).send("User / password combination does not exist");
+    }
+  }
 });
 
-//Add route to logout
+// //Add route to logout
 app.post('/logout', (req, res) => {
   res.clearCookie('userId');
   res.redirect(`/`);
