@@ -18,14 +18,24 @@ function generateRandomString() {
   return result;
 };
 
-function getUser(users, userId) {
-  let returnUser = {};
+function getUserById(users, userId) {
+  let user = {};
   for (const key of Object.keys(users)) {
     if (key === userId) {
-      returnUser = (users[key]);
+      user = (users[key]);
     }
   }
-  return returnUser;
+  return user;
+}
+
+function getUserByEmail(users, email) {
+  let user = {};
+  for (const key of Object.keys(users)) {
+    if (users[key]['email'] === email) {
+      user = (users[key]);
+    }
+  }
+  return user;
 }
 
 const urlDatabase = {
@@ -98,14 +108,25 @@ app.get("/register", (req, res) => {
 
 //Add route to handle the registration
 app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!email || !password) {
+    return res.status(400).send('Please enter a valid email/password');
+  } else {
+    const userInfo = getUserByEmail(users, email);
+    if (Object.keys(userInfo).length > 0) {
+      res.clearCookie('userId');
+      return res.status(302).send("User/password already exists..login instead!");
+    }
+  }
   const userId = generateRandomString();
   users[userId] = {
     id: userId,
     email: req.body.email,
     password: req.body.password
-};
-res.cookie('userId', userId);
-res.redirect('/urls');
+}
+  res.cookie('userId', userId);
+  res.redirect('/urls');
 });
 
 app.post("/urls/:id", (req, res) => {
