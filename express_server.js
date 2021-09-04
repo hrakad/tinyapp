@@ -18,25 +18,49 @@ function generateRandomString() {
   return result;
 };
 
+function getUser(users, userId) {
+  let returnUser = {};
+  for (const key of Object.keys(users)) {
+    if (key === userId) {
+      returnUser = (users[key]);
+    }
+  }
+  return returnUser;
+}
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-//Route to root of the app
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+//Route into the root of the app
 app.get("/", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username'],
+    userId: req.cookies['userId'],
+    users: users,
   };
-  res.render("partials/_header", templateVars);
+  res.render("registration", templateVars);
 });
 
 //Route to the urls
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username'],
+    userId: req.cookies['userId'],
+    users: users,
   };
   res.render("urls_index", templateVars);
 });
@@ -44,7 +68,8 @@ app.get("/urls", (req, res) => {
 //Route to the new urls
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies['username'],
+    userId: req.cookies['userId'],
+    users: users,
   };
   res.render("urls_new", templateVars);
 });
@@ -53,7 +78,8 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies['username']
+    userId: req.cookies['userId'],
+    users: users,
   };
   res.render("urls_show", templateVars);
 });
@@ -62,11 +88,24 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlDatabase[req.params.shortURL]);
 });
 
+// Create register endpoint
 app.get("/register", (req, res) => {
   const templateVars = {
-    username: req.cookies['username'],
+    userId: req.cookies['userId']
   };
   res.render('registration', templateVars)
+});
+
+//Add route to handle the registration
+app.post("/register", (req, res) => {
+  const userId = generateRandomString();
+  users[userId] = {
+    id: userId,
+    email: req.body.email,
+    password: req.body.password
+};
+res.cookie('userId', userId);
+res.redirect('/urls');
 });
 
 app.post("/urls/:id", (req, res) => {
@@ -83,7 +122,6 @@ app.post("/urls", (req, res) => {
 
 //Add route to edit URLs 
 app.post("/urls/:shortURL/edit", (req, res) => {
-  console.log(req.params.shortURL);
   res.redirect(`/urls/${req.params.shortURL}`);
 });
 
@@ -95,13 +133,13 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //Add route to login
 app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username);
+  res.cookie('userId', req.body.userId);
   res.redirect(`/urls`);
 });
 
 //Add route to logout
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('userId');
   res.redirect(`/`);
 });
 
