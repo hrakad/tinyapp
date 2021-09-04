@@ -8,7 +8,12 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
+      </div>
+    </div>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
         <% if(!userId) { %>
+        <a class="nav-item nav-link" href="/login">Login</a>
         <a class="nav-item nav-link" href="/register">Register</a>
         <% } %>      
       </div>
@@ -19,15 +24,7 @@
         <div class="form-group mb-2">
           <button type="submit" class="btn btn-primary">Logout</button>
         </div>
-      </form>
-    <% } else{ %>
-      <form class="form-inline" action="/login" method="POST">
-        <div class="form-group mb-2">
-          <label for="userId"></label>
-          <input class="form-control" type="text" name="userId" placeholder="UserId" style="width: 150px; margin: 1em">
-          <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-      </form>
+      </form>  
     <% } %>
   </nav>
 </header>
