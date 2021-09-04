@@ -63,8 +63,10 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = { user: username }
-  res.render('register', templateVars)
+  const templateVars = {
+    username: req.cookies['username'],
+  };
+  res.render('registration', templateVars)
 });
 
 app.post("/urls/:id", (req, res) => {
