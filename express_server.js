@@ -9,6 +9,16 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
+function getUserById(users, userId) {
+  let user = {};
+  for (const key of Object.keys(users)) {
+    if (key === userId) {
+      user = (users[key]);
+    }
+  }
+  return user;
+};
+
 function generateRandomString() {
   let result = "";
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -17,16 +27,6 @@ function generateRandomString() {
   }
   return result;
 };
-
-// function getUserById(users, userId) {
-//   let user = {};
-//   for (const key of Object.keys(users)) {
-//     if (key === userId) {
-//       user = (users[key]);
-//     }
-//   }
-//   return user;
-// }
 
 function getUserByEmail(users, email) {
   let user = {};
@@ -37,6 +37,20 @@ function getUserByEmail(users, email) {
   }
   return user;
 }
+
+const getUrlsById = function(urlDatabase, userId) {
+  let object = {};
+
+  for (let url in urlDatabase) {
+    if (urlDatabase[url]['userID'] === userId) {
+      object[url] = {
+        longURL: urlDatabase[url]['longURL'],
+        userID: urlDatabase[url]['userID']
+      };
+    }
+  }
+  return object;
+};
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "qE90aP" },
@@ -57,26 +71,28 @@ const users = {
 }
 //Create endpoint for the root of the app
 app.get("/", (req, res) => {
-  const currentUserId = req.cookies['userId'];
-
-  const templateVars = {
-    urls: urlDatabase,
-    userId: currentUserId,
-    user: users[currentUserId],
-  };
-  res.render("registration", templateVars);
+  res.redirect("/urls");
 });
 
 //Create endpoint for the urls
 app.get("/urls", (req, res) => {
   const currentUserId = req.cookies['userId'];
-
-  const templateVars = {
-    urls: urlDatabase,
-    userId: currentUserId,
-    user: users[currentUserId],
-  };
-  res.render("urls_index", templateVars);
+  if (currentUserId) {
+    const usersURLs = getUrlsById(urlDatabase, currentUserId);
+    const templateVars = {
+      urls: usersURLs,
+      userId: currentUserId,
+      user: users[currentUserId],
+    };
+    res.render("urls_index", templateVars);
+  } else {
+    const templateVars = {
+      urls: {},
+      userId: '',
+      user: '',
+    };
+    res.render("urls_index", templateVars);
+  }
 });
 
 //Create endpoint for new urls
@@ -85,33 +101,35 @@ app.get("/urls/new", (req, res) => {
   if (!currentUserId) {
     res.redirect("/login");
   } else {
-  const templateVars = {
-    urls: urlDatabase,
-    userId: currentUserId,
-    user: users[currentUserId],
-  };
-  res.render("urls_new", templateVars);
+    const templateVars = {
+      urls: urlDatabase,
+      userId: currentUserId,
+      user: users[currentUserId],
+    };
+    res.render("urls_new", templateVars);
   }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const currentUserId = req.cookies['userId'];
+  const shortURL = req.params.shortURL;
   if (!currentUserId) {
-    res.redirect("/login");
+    res.redirect("/urls");
   } else {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    userId: currentUserId,
-    users: users[currentUserId],
-  };
-  res.render("urls_show", templateVars);
+    const templateVars = {
+      shortURL,
+      longURL: urlDatabase[shortURL]['longURL'],
+      userId: currentUserId,
+      urlUserId: urlDatabase[shortURL]['userID'],
+      user: users[currentUserId],
+    };
+    res.render("urls_show", templateVars);
   }
 });
 
 //Create endpoint for shortURLs
 app.get("/u/:shortURL", (req, res) => {
-  res.redirect(urlDatabase[req.params.shortURL]["longURL"]);
+  res.redirect(urlDatabase[req.params.shortURL]['longURL']);
 });
 
 //Create login endpoint
@@ -126,6 +144,7 @@ app.get('/login', (req, res) => {
 // // Create register endpoint
 app.get('/register', (req, res) => {
   const currentUserId = req.cookies['userId'];
+
   const templateVars = {
     userId: currentUserId,
   };
@@ -134,17 +153,16 @@ app.get('/register', (req, res) => {
 
 // //Add route to handle the registration
 app.post('/register', (req, res) => {
-  const currentEmail = req.body.email;
-  const currentPassword = req.body.password;
-  if (!currentEmail || !currentPassword) {
+  const currEmail = req.body.email;
+  const currPassword = req.body.password;
+  if (!currEmail || !currPassword) {
     return res.status(400).send('Please enter a valid email/password');
   } else {
-    const userInfo = getUserByEmail(users, currentEmail);
+    const userInfo = getUserByEmail(users, currEmail);
     if (Object.keys(userInfo).length > 0) {
       return res.status(302).send("User/password already exists..login instead!");
     }
   }
-
   const userId = generateRandomString();
   users[userId] = {
     id: userId,
@@ -152,11 +170,11 @@ app.post('/register', (req, res) => {
     password: req.body.password
   };
   res.cookie('userId', userId);
-  res.redirect('/login');
+  res.redirect('/urls');
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id]["longURL"] = req.body.longURL;
+  urlDatabase[req.params.id]['longURL'] = req.body.longURL;
   res.redirect('/urls');
 });
 
@@ -174,31 +192,39 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 // //Add route to delete URLs 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect(`/urls`);
+  const currentUserId = req.cookies['userId'];
+  const shortURL = req.params.shortURL;
+  const urlUserId = urlDatabase[shortURL]['userID'];
+  if (urlUserId === currentUserId) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect(`/`);
+  } else {
+    return res.status(401).send('UNAUTHORIZED ACCESS!!!');
+  }
 });
 
-// //Add route to login
+//Add route to login
 app.post('/login', (req, res) => {
   const currentEmail = req.body.email;
-  const ceurrentPassword = req.body.password;
-  if (!currentEmail || !ceurrentPassword) {
+  const currentPassword = req.body.password;
+  if (!currentEmail || !currentPassword) {
     return res.status(403).send('Please enter a valid email/password');
   } else {
     const userInfo = getUserByEmail(users, currentEmail);
-    if (Object.keys(userInfo).length > 0 && ceurrentPassword === userInfo['password']) {
-      res.cookie('userId', userInfo['email']);
+    if (Object.keys(userInfo).length > 0 && currentPassword === userInfo['password']) {
+      res.cookie('userId', userInfo['id']);
       res.redirect('/urls');
     } else {
       return res.status(403).send("User / password combination does not exist");
     }
   }
+
 });
 
-// //Add route to logout
+//Add route to logout
 app.post('/logout', (req, res) => {
   res.clearCookie('userId');
-  res.redirect(`/`);
+  res.redirect('/urls');
 });
 
 //Listen
