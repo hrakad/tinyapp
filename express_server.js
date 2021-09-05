@@ -18,15 +18,15 @@ function generateRandomString() {
   return result;
 };
 
-function getUserById(users, userId) {
-  let user = {};
-  for (const key of Object.keys(users)) {
-    if (key === userId) {
-      user = (users[key]);
-    }
-  }
-  return user;
-}
+// function getUserById(users, userId) {
+//   let user = {};
+//   for (const key of Object.keys(users)) {
+//     if (key === userId) {
+//       user = (users[key]);
+//     }
+//   }
+//   return user;
+// }
 
 function getUserByEmail(users, email) {
   let user = {};
@@ -136,6 +136,7 @@ app.post('/register', (req, res) => {
       return res.status(302).send("User/password already exists..login instead!");
     }
   }
+
   const userId = generateRandomString();
   users[userId] = {
     id: userId,
@@ -143,7 +144,7 @@ app.post('/register', (req, res) => {
     password: req.body.password
   };
   res.cookie('userId', userId);
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
 app.post("/urls/:id", (req, res) => {
@@ -175,10 +176,9 @@ app.post('/login', (req, res) => {
   if (!currentEmail || !ceurrentPassword) {
     return res.status(403).send('Please enter a valid email/password');
   } else {
-  // Lookup the user object in the users object using the user_id cookie value
     const userInfo = getUserByEmail(users, currentEmail);
     if (Object.keys(userInfo).length > 0 && ceurrentPassword === userInfo['password']) {
-      res.cookie('userId', userInfo['id']);
+      res.cookie('userId', userInfo['email']);
       res.redirect('/urls');
     } else {
       return res.status(403).send("User / password combination does not exist");
