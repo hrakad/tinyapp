@@ -153,12 +153,12 @@ app.get('/register', (req, res) => {
 
 // //Add route to handle the registration
 app.post('/register', (req, res) => {
-  const currEmail = req.body.email;
-  const currPassword = req.body.password;
-  if (!currEmail || !currPassword) {
+  const currentEmail = req.body.email;
+  const currentPassword = req.body.password;
+  if (!currentEmail || !currentPassword) {
     return res.status(400).send('Please enter a valid email/password');
   } else {
-    const userInfo = getUserByEmail(users, currEmail);
+    const userInfo = getUserByEmail(users, currentEmail);
     if (Object.keys(userInfo).length > 0) {
       return res.status(302).send("User/password already exists..login instead!");
     }
