@@ -1,5 +1,7 @@
+const { getUserByEmail } = require('./helper');
 const express = require('express');
 const bodyParser = require("body-parser");
+const cookieSession = require('cookie-session')
 const cookieParser = require("cookie-parser");
 const bcrypt = require('bcrypt');
 const nodemon = require("nodemon");
@@ -9,6 +11,11 @@ const app = express();
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key']
+}));
+
 app.set("view engine", "ejs");
 
 function getUserById(users, userId) {
@@ -29,16 +36,6 @@ function generateRandomString() {
   }
   return result;
 };
-
-function getUserByEmail(users, email) {
-  let user = {};
-  for (const key of Object.keys(users)) {
-    if (users[key]['email'] === email) {
-      user = (users[key]);
-    }
-  }
-  return user;
-}
 
 const getUrlsById = function(urlDatabase, userId) {
   let object = {};
@@ -71,7 +68,7 @@ app.get("/", (req, res) => {
 
 //Create endpoint for the urls
 app.get("/urls", (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   if (currentUserId) {
     const usersURLs = getUrlsById(urlDatabase, currentUserId);
     const templateVars = {
@@ -92,7 +89,7 @@ app.get("/urls", (req, res) => {
 
 //Create endpoint for new urls
 app.get("/urls/new", (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   if (!currentUserId) {
     res.redirect("/login");
   } else {
@@ -106,11 +103,11 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   const shortURL = req.params.shortURL;
   if (!currentUserId) {
     res.redirect("/urls");
-  } else {
+  } else if (urlDatabase[shortURL]){
     const templateVars = {
       shortURL,
       longURL: urlDatabase[shortURL]['longURL'],
@@ -119,7 +116,9 @@ app.get("/urls/:shortURL", (req, res) => {
       user: users[currentUserId],
     };
     res.render("urls_show", templateVars);
-  }
+  } else {
+    res.status(404).send('Resource not found...Please check your input!');
+  }  
 });
 
 //Create endpoint for shortURLs
@@ -129,7 +128,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 //Create login endpoint
 app.get('/login', (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   const templateVars = {
     userId: currentUserId,
   };
@@ -138,7 +137,7 @@ app.get('/login', (req, res) => {
 
 // // Create register endpoint
 app.get('/register', (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
 
   const templateVars = {
     userId: currentUserId,
@@ -164,7 +163,7 @@ app.post('/register', (req, res) => {
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 10),
   };
-  res.cookie('userId', userId);
+  req.session.userId = userId;
   res.redirect('/urls');
 });
 
@@ -174,7 +173,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {longURL: req.body.longURL, userID: currentUserId};
   res.redirect(`/urls/${shortURL}`);
@@ -187,7 +186,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 // //Add route to delete URLs 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const currentUserId = req.cookies['userId'];
+  const currentUserId = req.session.userId;
   const shortURL = req.params.shortURL;
   const urlUserId = urlDatabase[shortURL]['userID'];
   if (urlUserId === currentUserId) {
@@ -207,7 +206,7 @@ app.post('/login', (req, res) => {
   } else {
     const userInfo = getUserByEmail(users, currentEmail);
     if (Object.keys(userInfo).length > 0 && bcrypt.compareSync(currentPassword, userInfo.password)) {
-      res.cookie('userId', userInfo['id']);
+      req.session.userId = userInfo['id'];
       res.redirect('/urls');
     } else {
       return res.status(403).send("User / password combination does not exist");
@@ -218,7 +217,7 @@ app.post('/login', (req, res) => {
 
 //Add route to logout
 app.post('/logout', (req, res) => {
-  res.clearCookie('userId');
+  req.session = null;
   res.redirect('/urls');
 });
 
@@ -230,4 +229,3 @@ app.get("/users", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listen on port ${PORT}!`);
 });
-
