@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcrypt');
+const nodemon = require("nodemon");
 const PORT = 8080;
 
 const app = express();
@@ -58,17 +60,10 @@ const urlDatabase = {
 };
 
 const users = { 
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple"
-  },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "funk"
-  }
-}
+
+};
+
+
 //Create endpoint for the root of the app
 app.get("/", (req, res) => {
   res.redirect("/urls");
@@ -167,7 +162,7 @@ app.post('/register', (req, res) => {
   users[userId] = {
     id: userId,
     email: req.body.email,
-    password: req.body.password
+    password: bcrypt.hashSync(req.body.password, 10),
   };
   res.cookie('userId', userId);
   res.redirect('/urls');
@@ -211,7 +206,7 @@ app.post('/login', (req, res) => {
     return res.status(403).send('Please enter a valid email/password');
   } else {
     const userInfo = getUserByEmail(users, currentEmail);
-    if (Object.keys(userInfo).length > 0 && currentPassword === userInfo['password']) {
+    if (Object.keys(userInfo).length > 0 && bcrypt.compareSync(currentPassword, userInfo.password)) {
       res.cookie('userId', userInfo['id']);
       res.redirect('/urls');
     } else {
@@ -227,7 +222,12 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 
+app.get("/users", (req, res) => {
+  res.send({users})
+});
+
 //Listen
 app.listen(PORT, () => {
   console.log(`Example app listen on port ${PORT}!`);
 });
+
