@@ -1,4 +1,4 @@
-const { getUserByEmail } = require('./helper');
+const { getUserByEmail, getUserById, generateRandomString, getUrlsById } = require('./helper');
 const express = require('express');
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
@@ -17,39 +17,6 @@ app.use(cookieSession({
 }));
 
 app.set("view engine", "ejs");
-
-function getUserById(users, userId) {
-  let user = {};
-  for (const key of Object.keys(users)) {
-    if (key === userId) {
-      user = (users[key]);
-    }
-  }
-  return user;
-};
-
-function generateRandomString() {
-  let result = "";
-  let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-const getUrlsById = function(urlDatabase, userId) {
-  let object = {};
-
-  for (let url in urlDatabase) {
-    if (urlDatabase[url]['userID'] === userId) {
-      object[url] = {
-        longURL: urlDatabase[url]['longURL'],
-        userID: urlDatabase[url]['userID']
-      };
-    }
-  }
-  return object;
-};
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "qE90aP" },
