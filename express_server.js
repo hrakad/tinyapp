@@ -39,20 +39,20 @@ function getUserByEmail(users, email) {
 }
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "qE90aP" },
+  "9sm5xK": { longURL: "http://www.google.com", userID: "hR39aA"}
 };
 
 const users = { 
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: "purple"
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: "funk"
   }
 }
 //Create endpoint for the root of the app
@@ -82,16 +82,23 @@ app.get("/urls", (req, res) => {
 //Create endpoint for new urls
 app.get("/urls/new", (req, res) => {
   const currentUserId = req.cookies['userId'];
+  if (!currentUserId) {
+    res.redirect("/login");
+  } else {
   const templateVars = {
     urls: urlDatabase,
     userId: currentUserId,
     user: users[currentUserId],
   };
   res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const currentUserId = req.cookies['userId'];
+  if (!currentUserId) {
+    res.redirect("/login");
+  } else {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
@@ -99,11 +106,12 @@ app.get("/urls/:shortURL", (req, res) => {
     users: users[currentUserId],
   };
   res.render("urls_show", templateVars);
+  }
 });
 
 //Create endpoint for shortURLs
 app.get("/u/:shortURL", (req, res) => {
-  res.redirect(urlDatabase[req.params.shortURL]);
+  res.redirect(urlDatabase[req.params.shortURL]["longURL"]);
 });
 
 //Create login endpoint
@@ -148,13 +156,14 @@ app.post('/register', (req, res) => {
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
+  urlDatabase[req.params.id]["longURL"] = req.body.longURL;
   res.redirect('/urls');
 });
 
 app.post("/urls", (req, res) => {
+  const currentUserId = req.cookies['userId'];
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {longURL: req.body.longURL, userID: currentUserId};
   res.redirect(`/urls/${shortURL}`);
 });
 
