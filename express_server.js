@@ -2,7 +2,6 @@ const { getUserByEmail, getUserById, generateRandomString, getUrlsById } = requi
 const express = require('express');
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
-const cookieParser = require("cookie-parser");
 const bcrypt = require('bcrypt');
 const nodemon = require("nodemon");
 const PORT = 8080;
@@ -10,7 +9,6 @@ const PORT = 8080;
 const app = express();
 
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['key']
@@ -19,8 +17,7 @@ app.use(cookieSession({
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "qE90aP" },
-  "9sm5xK": { longURL: "http://www.google.com", userID: "hR39aA"}
+
 };
 
 const users = { 
@@ -54,6 +51,7 @@ app.get("/urls", (req, res) => {
   }
 });
 
+
 //Create endpoint for new urls
 app.get("/urls/new", (req, res) => {
   const currentUserId = req.session.userId;
@@ -75,23 +73,27 @@ app.get("/urls/:shortURL", (req, res) => {
   if (!currentUserId) {
     res.redirect("/urls");
   } else if (urlDatabase[shortURL]){
-    const templateVars = {
+    let templateVars = {
       shortURL,
       longURL: urlDatabase[shortURL]['longURL'],
       userId: currentUserId,
       urlUserId: urlDatabase[shortURL]['userID'],
       user: users[currentUserId],
-    };
+      email: users[currentUserId]['email']
+    }; 
+    if (currentUserId === urlDatabase[templateVars.shortURL].userID) {
     res.render("urls_show", templateVars);
-  } else {
-    res.status(404).send('Resource not found...Please check your input!');
-  }  
+    } 
+  }
+  res.status(404).send('Resource not found...Please check your input!'); 
 });
 
 //Create endpoint for shortURLs
 app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlDatabase[req.params.shortURL]['longURL']);
 });
+
+
 
 //Create login endpoint
 app.get('/login', (req, res) => {
